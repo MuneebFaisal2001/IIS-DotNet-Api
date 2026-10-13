@@ -1,0 +1,45 @@
+name: Build, Test and Deploy to IIS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore
+
+    - name: Run Automated Unit Tests
+      run: dotnet test --no-restore --verbosity normal
+
+    - name: Publish Web API
+      run: |
+        dotnet publish MyCustomApi/MyCustomApi.csproj -c Release -o C:\inetpub\wwwroot\MyCustomApi --no-restore
+
+    - name: Restart IIS Website
+      run: |
+        Import-Module WebAdministration
+        Restart-WebAppPool -Name "MyCustomApiPool"
+        Restart-WebItem -PSPath "IIS:\Sites\MyCustomApi"
+
+    - name: Health Check (Up/Down Verification)
+      run: |
+        Start-Sleep -Seconds 3
+        $response = Invoke-WebRequest -Uri "http://localhost:5070/health" -UseBasicParsing
+        if ($response.StatusCode -eq 200 -and $response.Content -eq "Healthy") {
+            Write-Host "Application is UP and Healthy on IIS!"
+        } else {
+            Write-Error "Application is DOWN or returned unhealthy status."
+            exit 1
+        }
