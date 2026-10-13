@@ -18,14 +18,18 @@ jobs:
     - name: Run Automated Unit Tests
       run: dotnet test --no-restore --verbosity normal
 
+    - name: Stop IIS Website
+      run: |
+        & "$env:windir\system32\inetsrv\appcmd.exe" stop site /site.name:"MyCustomApi"
+        & "$env:windir\system32\inetsrv\appcmd.exe" stop apppool /apppool.name:"MyCustomApiPool"
+
     - name: Publish Web API
       run: |
         dotnet publish MyCustomApi/MyCustomApi.csproj -c Release -o C:\inetpub\wwwroot\MyCustomApi --no-restore
 
-    - name: Restart IIS Website
+    - name: Start IIS Website
       run: |
-        & "$env:windir\system32\inetsrv\appcmd.exe" recycle apppool /apppool.name:"MyCustomApiPool"
-        & "$env:windir\system32\inetsrv\appcmd.exe" stop site /site.name:"MyCustomApi"
+        & "$env:windir\system32\inetsrv\appcmd.exe" start apppool /apppool.name:"MyCustomApiPool"
         & "$env:windir\system32\inetsrv\appcmd.exe" start site /site.name:"MyCustomApi"
 
     - name: Health Check (Up/Down Verification)
