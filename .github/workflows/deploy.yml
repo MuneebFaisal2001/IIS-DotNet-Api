@@ -24,9 +24,9 @@ jobs:
 
     - name: Restart IIS Website
       run: |
-        Import-Module WebAdministration
-        Restart-WebAppPool -Name "MyCustomApiPool"
-        Restart-WebItem -PSPath "IIS:\Sites\MyCustomApi"
+        & "$env:windir\system32\inetsrv\appcmd.exe" recycle apppool /apppool.name:"MyCustomApiPool"
+        & "$env:windir\system32\inetsrv\appcmd.exe" stop site /site.name:"MyCustomApi"
+        & "$env:windir\system32\inetsrv\appcmd.exe" start site /site.name:"MyCustomApi"
 
     - name: Health Check (Up/Down Verification)
       run: |
